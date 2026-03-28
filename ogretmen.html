@@ -239,6 +239,7 @@
 
   window.startQuiz = function() {
     remove(ref(db, 'votes'));
+    remove(ref(db, 'students'));
     set(ref(db, 'currentQuestion'), 0);
     currentQ = 0;
     revealed = false;
