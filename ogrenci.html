@@ -60,17 +60,10 @@
 
 <div class="card">
 
-  <!-- Giriş ekranı -->
-  <div id="screen-login" class="screen active">
-    <div class="badge">Sayılar Teorisi Quiz</div>
-    <div style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">Hoş geldiniz!</div>
-    <div style="font-size:14px;color:#666;margin-bottom:20px;">Quize katılmak için adınızı girin.</div>
-    <input id="name-input" class="name-input" type="text" placeholder="Adınız Soyadınız" maxlength="40"/>
-    <button class="btn btn-submit" onclick="startQuiz()">Quize Başla</button>
-  </div>
+  <!-- Giriş ekranı kaldırıldı - otomatik katılım -->
 
   <!-- Bekleme ekranı -->
-  <div id="screen-waiting" class="screen">
+  <div id="screen-waiting" class="screen active">
     <div class="waiting">
       <div style="font-size:15px;font-weight:500;color:#1a1a1a;">Soru yükleniyor...</div>
       <div class="dot-anim"><span></span><span></span><span></span></div>
@@ -178,15 +171,14 @@
     document.getElementById(id).classList.add('active');
   }
 
-  window.startQuiz = function() {
-    const name = document.getElementById('name-input').value.trim();
-    if (!name) { alert('Lütfen adınızı girin.'); return; }
-    studentName = name;
+  function autoJoin() {
+    studentName = 'Öğrenci';
     studentId = 'student_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
-    set(ref(db, 'students/' + studentId), { name, score: 0, answers: {} });
-    show('screen-waiting');
+    set(ref(db, 'students/' + studentId), { name: studentName, score: 0, answers: {} });
     listenForQuestion();
-  };
+  }
+
+  autoJoin();
 
   function listenForQuestion() {
     onValue(ref(db, 'currentQuestion'), snap => {
@@ -195,6 +187,10 @@
       if (qIdx === -1) {
         showResults();
         return;
+      }
+      if (qIdx === 0 && currentQ > 0) {
+        answered = {};
+        userAnswers = [];
       }
       if (qIdx !== currentQ) {
         currentQ = qIdx;
