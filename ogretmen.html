@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz — Öğretmen Paneli</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;min-height:100vh;padding:20px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:12px;padding:14px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+  .topbar-title{font-size:16px;font-weight:700;color:#1a1a1a;}
+  .topbar-sub{font-size:12px;color:#888;}
+  .grid{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start;}
+  .panel{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+  .panel-title{font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;}
+  .badge{display:inline-block;font-size:11px;font-weight:600;background:#E6F1FB;color:#185FA5;border-radius:20px;padding:3px 10px;margin-bottom:10px;}
+  .q-text{font-size:16px;font-weight:600;color:#1a1a1a;line-height:1.5;margin-bottom:16px;}
+  .timer-wrap{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .timer-track{flex:1;height:8px;background:#f0f0f0;border-radius:10px;overflow:hidden;}
+  .timer-fill{height:100%;border-radius:10px;background:#378ADD;transition:width 1s linear;}
+  .timer-txt{font-size:14px;font-weight:600;color:#555;min-width:44px;text-align:right;}
+  .chart-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .chart-lbl{font-size:14px;font-weight:600;width:20px;color:#555;flex-shrink:0;}
+  .bar-wrap{flex:1;height:34px;background:#f5f5f5;border-radius:6px;overflow:hidden;position:relative;}
+  .bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:10px;min-width:2px;transition:width .5s ease;}
+  .bar-fill.correct{background:#C0DD97;}
+  .bar-fill.wrong{background:#F5C4B3;}
+  .bar-count{font-size:13px;font-weight:600;}
+  .bar-count.c{color:#27500A;}
+  .bar-count.w{color:#993C1D;}
+  .bar-pct{font-size:12px;color:#888;min-width:36px;text-align:right;}
+  .opt-text{font-size:13px;color:#555;flex:1;line-height:1.4;}
+  .feedback-box{background:#EAF3DE;border:1px solid #97C459;border-radius:8px;padding:10px 14px;font-size:13px;color:#27500A;margin-top:14px;line-height:1.5;}
+  .btn{padding:10px 20px;border-radius:8px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;}
+  .btn-start{background:#378ADD;color:#fff;}
+  .btn-start:hover{background:#185FA5;}
+  .btn-reveal{background:#EAF3DE;color:#27500A;border:1px solid #97C459;}
+  .btn-reveal:hover{background:#C0DD97;}
+  .btn-next{background:#1a1a1a;color:#fff;}
+  .btn-next:hover{background:#333;}
+  .btn-end{background:#FCEBEB;color:#A32D2D;border:1px solid #F09595;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;}
+  .stat{background:#f8f8f8;border-radius:8px;padding:12px;text-align:center;}
+  .stat-val{font-size:24px;font-weight:700;color:#1a1a1a;}
+  .stat-lbl{font-size:11px;color:#888;margin-top:2px;}
+  .student-list{max-height:220px;overflow-y:auto;}
+  .student-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:.5px solid #f0f0f0;font-size:13px;}
+  .student-name{color:#1a1a1a;font-weight:500;}
+  .student-score{color:#185FA5;font-weight:600;}
+  .q-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+  .q-dot{width:32px;height:32px;border-radius:8px;border:1.5px solid #e0e0e0;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:#888;}
+  .q-dot.active{border-color:#378ADD;background:#E6F1FB;color:#0C447C;}
+  .q-dot.done{border-color:#639922;background:#EAF3DE;color:#27500A;}
+  .revealed-note{font-size:12px;color:#888;margin-top:8px;}
+  @media(max-width:700px){.grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Öğretmen Paneli — Sayılar Teorisi Quiz</div>
+    <div class="topbar-sub">Gerçek zamanlı sonuçlar</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span style="font-size:13px;color:#888;">Katılımcı: <strong id="student-count">0</strong></span>
+    <div id="conn-dot" style="width:10px;height:10px;border-radius:50%;background:#ccc;"></div>
+  </div>
+</div>
+
+<div class="grid">
+
+  <div class="panel">
+    <div class="panel-title">Aktif Soru</div>
+    <div id="idle-msg" style="text-align:center;padding:40px 0;color:#888;">
+      <div style="font-size:32px;margin-bottom:8px;">⏳</div>
+      <div style="font-size:15px;font-weight:500;">Quizi başlatmak için aşağıdaki butona basın</div>
+    </div>
+    <div id="question-panel" style="display:none;">
+      <div class="badge" id="q-badge">Soru 1 / 5</div>
+      <div class="q-text" id="q-text"></div>
+      <div class="timer-wrap">
+        <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+        <div class="timer-txt" id="timer-txt">10:00</div>
+      </div>
+      <div id="chart-bars"></div>
+      <div id="answer-reveal" style="display:none;" class="feedback-box"></div>
+      <div class="revealed-note" id="vote-note"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-start" id="btn-start" onclick="startQuiz()">Quizi Başlat</button>
+      <button class="btn btn-reveal" id="btn-reveal" onclick="revealAnswer()" disabled>Cevabı Göster</button>
+      <button class="btn btn-next" id="btn-next" onclick="nextQuestion()" disabled>Sonraki Soru →</button>
+      <button class="btn btn-end" id="btn-end" onclick="endQuiz()" disabled>Quizi Bitir</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="panel">
+      <div class="panel-title">İstatistikler</div>
+      <div class="stat-grid">
+        <div class="stat"><div class="stat-val" id="stat-joined">0</div><div class="stat-lbl">Katıldı</div></div>
+        <div class="stat"><div class="stat-val" id="stat-answered">0</div><div class="stat-lbl">Yanıtladı</div></div>
+        <div class="stat"><div class="stat-val" id="stat-correct" style="color:#3B6D11;">0%</div><div class="stat-lbl">Doğru ort.</div></div>
+      </div>
+      <div class="q-nav" id="q-nav"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Öğrenciler</div>
+      <div class="student-list" id="student-list">
+        <div style="text-align:center;color:#aaa;font-size:13px;padding:20px;">Henüz katılımcı yok</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const FIREBASE_URL = "https://quiz-sinif-add48-default-rtdb.firebaseio.com";
+  const app = initializeApp({ databaseURL: FIREBASE_URL }, "ogretmen");
+  const db = getDatabase(app);
+
+  const questions = [
+    {
+      text: "Asal sayı ve bileşik sayı arasındaki temel fark aşağıdakilerden hangisidir?",
+      opts: [
+        "Asal sayıların sadece 1 ve kendisi olmak üzere iki pozitif böleni vardır, bileşik sayıların ise daha fazladır.",
+        "Asal sayılar negatif olabilir, bileşik sayılar ise pozitif sayılardır.",
+        "1 sayısı en küçük asal sayıdır, bileşik sayılar ise 2'den başlar.",
+        "Asal sayılar sadece tek sayılardan oluşur, bileşik sayılar ise çift sayılardır."
+      ],
+      answer: 0,
+      explanation: "Tanım 5.3: Pozitif bölenleri sadece 1 ve kendisi olan 1'den büyük tam sayılara asal sayı denir."
+    },
+    {
+      text: "1'den büyük bir n tam sayısının bileşik sayı olduğunu kanıtlamak için hangi aralıkta bir d böleni aranmalıdır?",
+      opts: ["2 ≤ d ≤ √n", "n/2 ≤ d < n", "√n < d < n", "1 < d < n"],
+      answer: 0,
+      explanation: "Teorem 5.4: n bileşik ise 2 ≤ d ≤ √n koşulunu sağlayan bir d böleni vardır."
+    },
+    {
+      text: "asalmi(n) çalıştırıldığında, girdi olarak verilen n sayısı asalsa algoritma hangi değeri döndürür?",
+      opts: ["0", "√n", "n", "1"],
+      answer: 0,
+      explanation: "Algoritma 5.5: n asal ise hiçbir bölen bulunamaz ve algoritma 0 döndürür."
+    },
+    {
+      text: "Aritmetiğin Temel Teoremi aşağıdakilerden hangisini garanti eder?",
+      opts: [
+        "1'den büyük her tam sayının, çarpanlarının sırası önemsiz olmak kaydıyla, tek bir asal çarpan çarpımı şeklinde yazılabileceğini",
+        "Asal sayıların sonlu sayıda olduğunu",
+        "Her tam sayının sadece iki asal çarpanı olduğunu",
+        "Her çift sayının iki asal sayının toplamı olarak yazılabileceğini"
+      ],
+      answer: 0,
+      explanation: "Teorem 5.6 (Aritmetiğin Temel Teoremi): Her n > 1 tam sayısı, asal çarpanlarının çarpımı olarak tek türlü yazılabilir."
+    },
+    {
+      text: "Onaltılık (hexadecimal) sayı sisteminde 'B' sembolü onluk sistemde hangi sayıya karşılık gelir?",
+      opts: ["2", "11", "10", "12"],
+      answer: 1,
+      explanation: "Onaltılık sistemde A=10, B=11, C=12, D=13, E=14, F=15 değerlerine karşılık gelir."
+    }
+  ];
+
+  const TIMER_SECONDS = 600;
+  let currentQ = -1;
+  let revealed = false;
+  let timerInterval = null;
+  let timeLeft = TIMER_SECONDS;
+  let students = {};
+  let votes = {};
+  let chartUpdateInterval = null;
+
+  document.getElementById('conn-dot').style.background = '#639922';
+
+  onValue(ref(db, 'students'), snap => {
+    students = snap.val() || {};
+    updateStudentList();
+  });
+
+  onValue(ref(db, 'votes'), snap => {
+    votes = snap.val() || {};
+    if (currentQ >= 0) renderChart(currentQ);
+    updateStats();
+  });
+
+  function updateStudentList() {
+    const list = document.getElementById('student-list');
+    const keys = Object.keys(students);
+    document.getElementById('student-count').textContent = keys.length;
+    document.getElementById('stat-joined').textContent = keys.length;
+    if (!keys.length) {
+      list.innerHTML = '<div style="text-align:center;color:#aaa;font-size:13px;padding:20px;">Henüz katılımcı yok</div>';
+      return;
+    }
+    list.innerHTML = '';
+    keys.forEach(k => {
+      const s = students[k];
+      const row = document.createElement('div');
+      row.className = 'student-row';
+      const totalCorrect = s.answers ? Object.values(s.answers).filter(a => a.correct === 1).length : 0;
+      row.innerHTML = `<span class="student-name">${s.name}</span><span class="student-score">${totalCorrect}/${questions.length}</span>`;
+      list.appendChild(row);
+    });
+  }
+
+  function updateStats() {
+    const keys = Object.keys(students);
+    document.getElementById('stat-joined').textContent = keys.length;
+    if (currentQ < 0) return;
+    const qVotes = votes[currentQ] || {};
+    let total = 0, correct = 0;
+    Object.keys(qVotes).forEach(optIdx => {
+      const cnt = Object.keys(qVotes[optIdx] || {}).length;
+      total += cnt;
+      if (parseInt(optIdx) === questions[currentQ].answer) correct += cnt;
+    });
+    document.getElementById('stat-answered').textContent = total;
+    document.getElementById('stat-correct').textContent = total > 0 ? Math.round((correct/total)*100) + '%' : '0%';
+  }
+
+  function buildQNav() {
+    const nav = document.getElementById('q-nav');
+    nav.innerHTML = '';
+    questions.forEach((_, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'q-dot' + (i === currentQ ? ' active' : i < currentQ ? ' done' : '');
+      btn.textContent = i + 1;
+      nav.appendChild(btn);
+    });
+  }
+
+  window.startQuiz = function() {
+    remove(ref(db, 'votes'));
+    set(ref(db, 'currentQuestion'), 0);
+    currentQ = 0;
+    revealed = false;
+    document.getElementById('idle-msg').style.display = 'none';
+    document.getElementById('question-panel').style.display = 'block';
+    document.getElementById('btn-start').disabled = true;
+    document.getElementById('btn-reveal').disabled = false;
+    document.getElementById('btn-end').disabled = false;
+    loadQuestion(0);
+  };
+
+  function loadQuestion(idx) {
+    const q = questions[idx];
+    revealed = false;
+    document.getElementById('q-badge').textContent = `Soru ${idx+1} / ${questions.length}`;
+    document.getElementById('q-text').textContent = q.text;
+    document.getElementById('answer-reveal').style.display = 'none';
+    document.getElementById('vote-note').textContent = '';
+    document.getElementById('btn-reveal').disabled = false;
+    document.getElementById('btn-next').disabled = true;
+    if (idx === questions.length - 1) {
+      document.getElementById('btn-next').textContent = 'Quizi Bitir →';
+      document.getElementById('btn-next').onclick = endQuiz;
+    } else {
+      document.getElementById('btn-next').textContent = 'Sonraki Soru →';
+      document.getElementById('btn-next').onclick = nextQuestion;
+    }
+    renderChart(idx);
+    buildQNav();
+    startTimer();
+    chartUpdateInterval = setInterval(() => renderChart(currentQ), 2000);
+  }
+
+  function renderChart(idx) {
+    const q = questions[idx];
+    const qVotes = votes[idx] || {};
+    let total = 0;
+    const counts = q.opts.map((_, i) => {
+      const c = Object.keys(qVotes[i] || {}).length;
+      total += c;
+      return c;
+    });
+    const container = document.getElementById('chart-bars');
+    container.innerHTML = '';
+    counts.forEach((count, i) => {
+      const pct = total > 0 ? Math.round((count/total)*100) : 0;
+      const isCorrect = i === q.answer;
+      const row = document.createElement('div');
+      row.style.marginBottom = '8px';
+      row.innerHTML = `
+        <div class="chart-row">
+          <span class="chart-lbl">${'ABCD'[i]}</span>
+          <div class="bar-wrap">
+            <div class="bar-fill ${isCorrect ? 'correct' : 'wrong'}" style="width:${Math.max(pct,0)}%">
+              <span class="bar-count ${isCorrect ? 'c' : 'w'}">${pct > 8 ? pct+'%' : ''}</span>
+            </div>
+          </div>
+          <span style="font-size:12px;color:#888;min-width:40px;text-align:right;">${count} oy</span>
+        </div>
+        <div style="font-size:12px;color:#888;margin-left:30px;line-height:1.4;">${q.opts[i]}</div>
+      `;
+      container.appendChild(row);
+    });
+    document.getElementById('vote-note').textContent = `Toplam yanıt: ${total}`;
+    updateStats();
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    timeLeft = TIMER_SECONDS;
+    updateTimerUI();
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      updateTimerUI();
+      if (timeLeft <= 0) clearInterval(timerInterval);
+    }, 1000);
+  }
+
+  function updateTimerUI() {
+    const m = Math.floor(timeLeft/60);
+    const s = timeLeft % 60;
+    document.getElementById('timer-txt').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    const pct = (timeLeft/TIMER_SECONDS)*100;
+    const fill = document.getElementById('timer-fill');
+    fill.style.width = pct + '%';
+    fill.style.background = pct > 40 ? '#378ADD' : pct > 20 ? '#EF9F27' : '#E24B4A';
+  }
+
+  window.revealAnswer = function() {
+    if (revealed) return;
+    revealed = true;
+    clearInterval(timerInterval);
+    clearInterval(chartUpdateInterval);
+    renderChart(currentQ);
+    const q = questions[currentQ];
+    const box = document.getElementById('answer-reveal');
+    box.textContent = 'Doğru cevap: ' + 'ABCD'[q.answer] + ' — ' + q.explanation;
+    box.style.display = 'block';
+    document.getElementById('btn-reveal').disabled = true;
+    document.getElementById('btn-next').disabled = false;
+  };
+
+  window.nextQuestion = function() {
+    clearInterval(chartUpdateInterval);
+    currentQ++;
+    set(ref(db, 'currentQuestion'), currentQ);
+    loadQuestion(currentQ);
+  };
+
+  window.endQuiz = function() {
+    clearInterval(timerInterval);
+    clearInterval(chartUpdateInterval);
+    set(ref(db, 'currentQuestion'), -1);
+    document.getElementById('btn-next').disabled = true;
+    document.getElementById('btn-reveal').disabled = true;
+    document.getElementById('btn-end').disabled = true;
+    document.getElementById('vote-note').textContent = 'Quiz tamamlandı. Öğrenciler sonuç ekranını görmektedir.';
+  };
+</script>
+</body>
+</html>
