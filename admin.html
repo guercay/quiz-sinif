@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Admin Paneli</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;min-height:100vh;padding:20px;}
+.topbar{background:#fff;border-radius:12px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.topbar-title{font-size:16px;font-weight:700;color:#1a1a1a;}
+.topbar-sub{font-size:12px;color:#888;}
+.badge{display:inline-block;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;}
+.badge-purple{background:#f3f0ff;color:#7c3aed;}
+.badge-blue{background:#eff6ff;color:#2563eb;}
+.badge-green{background:#f0fdf4;color:#16a34a;}
+.badge-red{background:#fef2f2;color:#dc2626;}
+.grid{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start;}
+@media(max-width:800px){.grid{grid-template-columns:1fr;}}
+.panel{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06);overflow:hidden;}
+.panel-head{padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;}
+.panel-title{font-size:13px;font-weight:600;color:#1a1a1a;}
+.test-list{max-height:calc(100vh - 220px);overflow-y:auto;}
+.test-item{padding:12px 18px;border-bottom:1px solid #f8f8f8;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:space-between;}
+.test-item:hover{background:#f8f8f8;}
+.test-item.active{background:#eff6ff;border-left:3px solid #2563eb;}
+.test-name{font-size:14px;font-weight:500;color:#1a1a1a;}
+.test-meta{font-size:11px;color:#888;margin-top:2px;}
+.test-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s;}
+.test-item:hover .test-actions{opacity:1;}
+.icon-btn{width:28px;height:28px;border-radius:6px;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .15s;}
+.icon-btn:hover{background:#e8e8e8;}
+.icon-btn.danger:hover{background:#fee2e2;color:#dc2626;}
+.btn{padding:8px 16px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.btn-primary{background:#2563eb;color:#fff;}
+.btn-primary:hover{background:#1d4ed8;}
+.btn-green{background:#16a34a;color:#fff;}
+.btn-green:hover{background:#15803d;}
+.btn-red{background:#dc2626;color:#fff;}
+.btn-red:hover{background:#b91c1c;}
+.btn-gray{background:#f0f0f0;color:#444;}
+.btn-gray:hover{background:#e0e0e0;}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:600;color:#555;margin-bottom:5px;display:block;}
+.form-input{width:100%;padding:9px 12px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:14px;outline:none;transition:border .15s;}
+.form-input:focus{border-color:#2563eb;}
+.form-textarea{width:100%;padding:9px 12px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:14px;outline:none;resize:vertical;min-height:60px;font-family:inherit;transition:border .15s;}
+.form-textarea:focus{border-color:#2563eb;}
+.q-card{background:#fff;border:1.5px solid #e8e8e8;border-radius:10px;padding:16px;margin-bottom:12px;position:relative;}
+.q-card.editing{border-color:#2563eb;}
+.q-number{font-size:11px;font-weight:700;color:#2563eb;margin-bottom:8px;}
+.q-text{font-size:14px;font-weight:500;color:#1a1a1a;margin-bottom:10px;}
+.q-opts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
+.q-opt{padding:7px 10px;border-radius:6px;font-size:12px;background:#f8f8f8;}
+.q-opt.correct{background:#dcfce7;color:#16a34a;font-weight:600;}
+.q-opt.wrong{background:#f8f8f8;color:#666;}
+.q-actions{display:flex;gap:6px;justify-content:flex-end;}
+.opt-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.opt-label{width:22px;height:22px;border-radius:50%;background:#2563eb;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.correct-radio{display:flex;align-items:center;gap:4px;font-size:12px;color:#555;cursor:pointer;}
+.correct-radio input{cursor:pointer;}
+.divider{height:1px;background:#f0f0f0;margin:16px 0;}
+.empty-state{padding:40px;text-align:center;color:#aaa;}
+.empty-icon{font-size:40px;margin-bottom:10px;}
+.empty-text{font-size:14px;}
+.stat-row{display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid #f0f0f0;}
+.stat{background:#f8f8f8;border-radius:8px;padding:10px 14px;flex:1;text-align:center;}
+.stat-val{font-size:22px;font-weight:700;color:#1a1a1a;}
+.stat-lbl{font-size:11px;color:#888;}
+.toast{position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;opacity:0;transform:translateY(10px);transition:all .3s;z-index:999;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal{background:#fff;border-radius:16px;padding:24px;max-width:480px;width:100%;}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:6px;}
+.modal-sub{font-size:14px;color:#666;margin-bottom:20px;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.section-header{padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;}
+.section-title{font-size:13px;font-weight:600;color:#1a1a1a;}
+.q-list{max-height:calc(100vh - 300px);overflow-y:auto;padding:16px 18px;}
+.no-select{color:#aaa;font-size:14px;padding:40px;text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Quiz Admin Paneli</div>
+    <div class="topbar-sub">Testleri ve soruları buradan yönetin</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span class="badge badge-purple" id="conn-badge">Bağlanıyor...</span>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- Sol: Test listesi -->
+  <div>
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Testler</span>
+        <button class="btn btn-primary btn-sm" onclick="showNewTestModal()">+ Yeni Test</button>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-val" id="stat-tests">0</div><div class="stat-lbl">Test</div></div>
+        <div class="stat"><div class="stat-val" id="stat-questions">0</div><div class="stat-lbl">Toplam Soru</div></div>
+      </div>
+      <div class="test-list" id="test-list">
+        <div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Henüz test yok</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sağ: Soru editörü -->
+  <div class="panel" id="editor-panel">
+    <div class="no-select">
+      <div style="font-size:36px;margin-bottom:10px;">←</div>
+      Sol taraftan bir test seçin veya yeni test oluşturun
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Yeni Test Modal -->
+<div class="modal-overlay" id="new-test-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Yeni Test Oluştur</div>
+    <div class="modal-sub">Test adı ve açıklamasını girin</div>
+    <div class="form-group">
+      <label class="form-label">Test Adı *</label>
+      <input class="form-input" id="new-test-name" placeholder="ör: Sayılar Teorisi — Hafta 5" maxlength="80"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Açıklama (isteğe bağlı)</label>
+      <input class="form-input" id="new-test-desc" placeholder="ör: Ayrık Yapılar dersi" maxlength="120"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="hideModal('new-test-modal')">İptal</button>
+      <button class="btn btn-primary" onclick="createTest()">Oluştur</button>
+    </div>
+  </div>
+</div>
+
+<!-- Soru Düzenle Modal -->
+<div class="modal-overlay" id="edit-q-modal" style="display:none;">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-title" id="edit-q-title">Soru Ekle</div>
+    <div class="form-group">
+      <label class="form-label">Soru Metni *</label>
+      <textarea class="form-textarea" id="eq-text" placeholder="Soruyu buraya yazın..." rows="3"></textarea>
+    </div>
+    <div id="eq-opts-wrap"></div>
+    <div class="form-group">
+      <label class="form-label">Açıklama (cevap gösterilince görünür)</label>
+      <textarea class="form-textarea" id="eq-explanation" placeholder="Doğru cevabın açıklaması..." rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="hideModal('edit-q-modal')">İptal</button>
+      <button class="btn btn-primary" onclick="saveQuestion()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Silme onay Modal -->
+<div class="modal-overlay" id="confirm-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-title" id="confirm-title">Emin misiniz?</div>
+    <div class="modal-sub" id="confirm-sub"></div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" onclick="hideModal('confirm-modal')">Vazgeç</button>
+      <button class="btn btn-red" id="confirm-ok-btn">Sil</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, remove, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const FIREBASE_URL = "https://quiz-sinif-add48-default-rtdb.europe-west1.firebasedatabase.app";
+const app = initializeApp({ databaseURL: FIREBASE_URL }, "admin");
+const db = getDatabase(app);
+
+let tests = {};
+let selectedTestId = null;
+let editingQuestionId = null;
+
+document.getElementById('conn-badge').textContent = 'Bağlandı ✓';
+document.getElementById('conn-badge').className = 'badge badge-green';
+
+// Testleri dinle
+onValue(ref(db, 'tests'), snap => {
+  tests = snap.val() || {};
+  renderTestList();
+  updateStats();
+  if (selectedTestId && tests[selectedTestId]) {
+    renderEditor(selectedTestId);
+  }
+});
+
+function renderTestList() {
+  const list = document.getElementById('test-list');
+  const keys = Object.keys(tests);
+  if (!keys.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Henüz test yok</div></div>';
+    return;
+  }
+  list.innerHTML = '';
+  keys.forEach(id => {
+    const t = tests[id];
+    const qCount = t.questions ? Object.keys(t.questions).length : 0;
+    const div = document.createElement('div');
+    div.className = 'test-item' + (id === selectedTestId ? ' active' : '');
+    div.innerHTML = `
+      <div style="flex:1;min-width:0;" onclick="selectTest('${id}')">
+        <div class="test-name">${t.name}</div>
+        <div class="test-meta">${t.desc || ''} · ${qCount} soru</div>
+      </div>
+      <div class="test-actions">
+        <button class="icon-btn danger" onclick="confirmDeleteTest('${id}')" title="Sil">🗑</button>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+function updateStats() {
+  const testCount = Object.keys(tests).length;
+  let qCount = 0;
+  Object.values(tests).forEach(t => { if (t.questions) qCount += Object.keys(t.questions).length; });
+  document.getElementById('stat-tests').textContent = testCount;
+  document.getElementById('stat-questions').textContent = qCount;
+}
+
+window.selectTest = function(id) {
+  selectedTestId = id;
+  renderTestList();
+  renderEditor(id);
+};
+
+function renderEditor(id) {
+  const t = tests[id];
+  if (!t) return;
+  const questions = t.questions ? Object.entries(t.questions) : [];
+  const panel = document.getElementById('editor-panel');
+
+  let qHtml = '';
+  questions.forEach(([qid, q], i) => {
+    const opts = q.opts || ['','','',''];
+    qHtml += `
+      <div class="q-card">
+        <div class="q-number">Soru ${i+1}</div>
+        <div class="q-text">${q.text}</div>
+        <div class="q-opts">
+          ${opts.map((o,oi) => `<div class="q-opt ${oi===q.answer?'correct':'wrong'}">${'ABCD'[oi]}) ${o}</div>`).join('')}
+        </div>
+        ${q.explanation ? `<div style="font-size:12px;color:#666;margin-bottom:8px;padding:6px 8px;background:#f8f8f8;border-radius:6px;">💡 ${q.explanation}</div>` : ''}
+        <div class="q-actions">
+          <button class="btn btn-gray btn-sm" onclick="editQuestion('${id}','${qid}')">Düzenle</button>
+          <button class="btn btn-red btn-sm" onclick="confirmDeleteQ('${id}','${qid}',${i+1})">Sil</button>
+        </div>
+      </div>`;
+  });
+
+  panel.innerHTML = `
+    <div class="section-header">
+      <div>
+        <div class="section-title">${t.name}</div>
+        <div style="font-size:11px;color:#888;">${t.desc || ''} · ${questions.length} soru</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-green btn-sm" onclick="addQuestion('${id}')">+ Soru Ekle</button>
+        <button class="btn btn-gray btn-sm" onclick="copyLinks('${id}')">🔗 Linkleri Kopyala</button>
+      </div>
+    </div>
+    <div class="q-list">
+      ${qHtml || '<div style="text-align:center;padding:40px;color:#aaa;">Henüz soru yok. Soru Ekle butonuna tıklayın.</div>'}
+    </div>`;
+}
+
+window.copyLinks = function(id) {
+  const base = window.location.origin + window.location.pathname.replace('admin.html','');
+  const text = `Öğretmen: ${base}ogretmen.html?test=${id}\nÖğrenci: ${base}ogrenci.html?test=${id}`;
+  navigator.clipboard.writeText(text);
+  showToast('Linkler kopyalandı!');
+};
+
+window.addQuestion = function(testId) {
+  editingQuestionId = null;
+  selectedTestId = testId;
+  document.getElementById('edit-q-title').textContent = 'Yeni Soru Ekle';
+  document.getElementById('eq-text').value = '';
+  document.getElementById('eq-explanation').value = '';
+  renderOptInputs(0);
+  document.getElementById('edit-q-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('eq-text').focus(), 100);
+};
+
+window.editQuestion = function(testId, qid) {
+  editingQuestionId = qid;
+  selectedTestId = testId;
+  const q = tests[testId].questions[qid];
+  document.getElementById('edit-q-title').textContent = 'Soruyu Düzenle';
+  document.getElementById('eq-text').value = q.text || '';
+  document.getElementById('eq-explanation').value = q.explanation || '';
+  renderOptInputs(q.answer || 0, q.opts || ['','','','']);
+  document.getElementById('edit-q-modal').style.display = 'flex';
+};
+
+function renderOptInputs(correctIdx, opts) {
+  opts = opts || ['','','',''];
+  const wrap = document.getElementById('eq-opts-wrap');
+  wrap.innerHTML = '';
+  ['A','B','C','D'].forEach((lbl, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+    row.innerHTML = `
+      <div style="width:22px;height:22px;border-radius:50%;background:#2563eb;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${lbl}</div>
+      <input class="form-input" id="eq-opt-${i}" placeholder="${lbl} şıkkı..." value="${opts[i]||''}" style="flex:1;"/>
+      <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#555;cursor:pointer;white-space:nowrap;">
+        <input type="radio" name="correct-opt" value="${i}" ${i===correctIdx?'checked':''}/> Doğru
+      </label>`;
+    wrap.appendChild(row);
+  });
+}
+
+window.saveQuestion = function() {
+  const text = document.getElementById('eq-text').value.trim();
+  if (!text) { showToast('Soru metni boş olamaz!'); return; }
+  const opts = [0,1,2,3].map(i => document.getElementById(`eq-opt-${i}`).value.trim());
+  if (opts.some(o => !o)) { showToast('Tüm şıkları doldurun!'); return; }
+  const correctEl = document.querySelector('input[name="correct-opt"]:checked');
+  if (!correctEl) { showToast('Doğru cevabı işaretleyin!'); return; }
+  const answer = parseInt(correctEl.value);
+  const explanation = document.getElementById('eq-explanation').value.trim();
+  const qData = { text, opts, answer, explanation };
+  const path = editingQuestionId
+    ? `tests/${selectedTestId}/questions/${editingQuestionId}`
+    : `tests/${selectedTestId}/questions/${Date.now()}`;
+  set(ref(db, path), qData).then(() => {
+    hideModal('edit-q-modal');
+    showToast(editingQuestionId ? 'Soru güncellendi ✓' : 'Soru eklendi ✓');
+  });
+};
+
+window.showNewTestModal = function() {
+  document.getElementById('new-test-name').value = '';
+  document.getElementById('new-test-desc').value = '';
+  document.getElementById('new-test-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('new-test-name').focus(), 100);
+};
+
+window.createTest = function() {
+  const name = document.getElementById('new-test-name').value.trim();
+  if (!name) { showToast('Test adı boş olamaz!'); return; }
+  const desc = document.getElementById('new-test-desc').value.trim();
+  const id = 'test_' + Date.now();
+  set(ref(db, `tests/${id}`), { name, desc, createdAt: Date.now() }).then(() => {
+    hideModal('new-test-modal');
+    showToast('Test oluşturuldu ✓');
+    setTimeout(() => selectTest(id), 500);
+  });
+};
+
+window.confirmDeleteTest = function(id) {
+  document.getElementById('confirm-title').textContent = 'Testi Sil';
+  document.getElementById('confirm-sub').textContent = `"${tests[id]?.name}" testini ve tüm sorularını silmek istediğinize emin misiniz?`;
+  document.getElementById('confirm-ok-btn').onclick = () => {
+    remove(ref(db, `tests/${id}`)).then(() => {
+      hideModal('confirm-modal');
+      showToast('Test silindi');
+      if (selectedTestId === id) {
+        selectedTestId = null;
+        document.getElementById('editor-panel').innerHTML = '<div class="no-select"><div style="font-size:36px;margin-bottom:10px;">←</div>Sol taraftan bir test seçin</div>';
+      }
+    });
+  };
+  document.getElementById('confirm-modal').style.display = 'flex';
+};
+
+window.confirmDeleteQ = function(testId, qid, num) {
+  document.getElementById('confirm-title').textContent = `Soru ${num} Silinsin mi?`;
+  document.getElementById('confirm-sub').textContent = 'Bu işlem geri alınamaz.';
+  document.getElementById('confirm-ok-btn').onclick = () => {
+    remove(ref(db, `tests/${testId}/questions/${qid}`)).then(() => {
+      hideModal('confirm-modal');
+      showToast('Soru silindi');
+    });
+  };
+  document.getElementById('confirm-modal').style.display = 'flex';
+};
+
+window.hideModal = function(id) { document.getElementById(id).style.display = 'none'; };
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+});
+</script>
+</body>
+</html>
